@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UBA QSL Sorter</title>
+<meta name="description" content="Sort QSL cards for the UBA QSL bureau (Belgium) according to the UBA sorting list.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='22' fill='%230e2638' stroke='%230e8a50' stroke-width='3'/%3E%3Cpath d='M24 20 L17 38 M24 20 L31 38 M19.5 32 H28.5' stroke='%23fff' stroke-width='2.5' fill='none'/%3E%3Ccircle cx='24' cy='17' r='2.5' fill='%23f0a500'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<script src="vendor/xlsx.full.min.js" defer></script>
+<script type="module" src="js/app.js"></script>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap">
+    <svg class="logo" viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="24" r="22" fill="#0e2638" stroke="#0e8a50" stroke-width="2.5"/>
+      <path d="M24 20 L17 38 M24 20 L31 38 M19.5 32 H28.5 M18.3 35 H29.7" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <path d="M17 12 a10 10 0 0 0 0 10 M31 12 a10 10 0 0 1 0 10 M13 9 a15 15 0 0 0 0 16 M35 9 a15 15 0 0 1 0 16" stroke="#0e8a50" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <circle cx="24" cy="17" r="2.6" fill="#f0a500"/>
+    </svg>
+    <div>
+      <div class="brand-kicker" data-i18n="tagline"></div>
+      <div class="brand-name">UBA QSL <span>Sorter</span></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" data-lang="en">EN</button>
+      <button type="button" data-lang="nl">NL</button>
+      <button type="button" data-lang="fr">FR</button>
+    </div>
+  </div>
+</div>
+
+<nav class="navbar">
+  <div class="wrap">
+    <a href="#sort" data-view="sort" data-i18n="navSort"></a>
+    <a href="#list" data-view="list" data-i18n="navList"></a>
+    <a href="#help" data-view="help" data-i18n="navHelp"></a>
+  </div>
+</nav>
+
+<main>
+  <div class="wrap">
+
+    <p id="status" class="muted" data-i18n="loading"></p>
+
+    <!-- =================== SORT =================== -->
+    <section id="view-sort" hidden>
+      <div class="no-print">
+        <div class="kicker" data-i18n="kicker"></div>
+        <h1 data-i18n="title"></h1>
+        <p class="lead" data-i18n="intro"></p>
+
+        <div class="card">
+          <h2 data-i18n="step1"></h2>
+          <div class="grid2">
+            <div>
+              <label class="lbl" for="paste" data-i18n="pasteLabel"></label>
+              <textarea id="paste" spellcheck="false" autocapitalize="characters" data-i18n-ph="pastePh"></textarea>
+              <div class="row"><button class="btn" id="addBtn" type="button" data-i18n="addBtn"></button></div>
+            </div>
+            <div>
+              <label class="lbl" data-i18n="dropTitle"></label>
+              <div class="drop" id="drop" tabindex="0" role="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+                <strong data-i18n="dropTitle"></strong>
+                <small data-i18n="dropHint"></small>
+              </div>
+              <input type="file" id="file" multiple hidden accept=".txt,.csv,.tsv,.xlsx,.xls,.xlsm,.ods,.adi,.adif,.log,.cbr">
+            </div>
+          </div>
+          <div id="sourcesBox" hidden>
+            <label class="lbl" style="margin-top:16px" data-i18n="sourcesTitle"></label>
+            <ul class="sources" id="sources"></ul>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 data-i18n="step2"></h2>
+          <p class="muted" id="reviewInfo"></p>
+          <div class="chips" id="chips"></div>
+          <div class="row">
+            <button class="btn big" id="sortBtn" type="button" data-i18n="sortBtn"></button>
+            <button class="btn ghost" id="clearBtn" type="button" data-i18n="clearAll"></button>
+          </div>
+        </div>
+      </div>
+
+      <div id="result" hidden>
+        <h2 data-i18n="step3"></h2>
+        <div class="stats" id="stats"></div>
+        <div id="alerts"></div>
+        <div class="toolbar no-print">
+          <button class="btn" id="printBtn" type="button" data-i18n="print"></button>
+          <button class="btn ghost" id="csvBtn" type="button" data-i18n="exportCsv"></button>
+          <button class="btn ghost" id="xlsxBtn" type="button" data-i18n="exportXlsx"></button>
+          <span class="muted" data-i18n="tickHint"></span>
+        </div>
+        <div class="card order-card" id="order"></div>
+        <div class="plist-head"><span>#</span><span data-i18n="colPacket"></span><span data-i18n="statCards"></span><span>Callsigns</span></div>
+        <ol class="plist" id="packets"></ol>
+      </div>
+    </section>
+
+    <!-- =================== LIST =================== -->
+    <section id="view-list" hidden>
+      <div class="kicker" data-i18n="kicker"></div>
+      <h1 data-i18n="listTitle"></h1>
+      <p class="lead" data-i18n="listIntro"></p>
+
+      <div class="card">
+        <h2 data-i18n="howTitle"></h2>
+        <ul class="how" id="how"></ul>
+        <div class="version" id="version"></div>
+      </div>
+
+      <div class="card">
+        <div class="filters">
+          <input type="search" id="search" data-i18n-ph="searchPh">
+          <select id="filter">
+            <option value="all" data-i18n="filterAll"></option>
+            <option value="none" data-i18n="filterNone"></option>
+          </select>
+        </div>
+        <p class="muted" id="rowsShown"></p>
+        <table>
+          <thead><tr><th data-i18n="colPrefix"></th><th data-i18n="colCountry"></th><th data-i18n="colPacket"></th></tr></thead>
+          <tbody id="listBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- =================== HELP =================== -->
+    <section id="view-help" hidden>
+      <div class="kicker" data-i18n="kicker"></div>
+      <h1 data-i18n="helpTitle"></h1>
+      <div class="card" id="helpBox"></div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span data-i18n="footer"></span>
+    <span id="footVersion"></span>
+    <span>73 de <b>ON3VZ</b></span>
+  </div>
+</footer>
+
+</body>
+</html>
